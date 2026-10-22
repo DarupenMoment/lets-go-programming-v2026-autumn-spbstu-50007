@@ -6,8 +6,8 @@ import (
 
 func main() {
 	var (
-		N, employees, T int
-		operator        string
+		N, employees, temperature int
+		operator                  string
 	)
 
 	if _, err := fmt.Scan(&N); err != nil {
@@ -33,22 +33,18 @@ func main() {
 		minK := 15
 
 		for range employees {
-			if _, err := fmt.Scan(&operator, &T); err != nil {
+			if _, err := fmt.Scan(&operator, &temperature); err != nil {
 				fmt.Println("Invalid input")
 
 				return
 			}
 
 			if operator == ">=" {
-				if T > minK {
-					minK = T
-				}
+				minK = max(minK, temperature)
 			}
 
 			if operator == "<=" {
-				if T < maxK {
-					maxK = T
-				}
+				maxK = min(maxK, temperature)
 			}
 
 			if minK <= maxK {
