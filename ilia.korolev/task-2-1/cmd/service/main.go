@@ -1,41 +1,61 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
-	var N, K, T int
-	var op string
+	var (
+		N, employees, T int
+		operator        string
+	)
+
 	if _, err := fmt.Scan(&N); err != nil {
 		fmt.Println("Invalid input N")
+
 		return
 	}
+
 	if !(N >= 1 && N <= 1000) {
 		fmt.Println("Invalid input N")
+
 		return
 	}
-	for i := 0; i < N; i++ {
-		fmt.Scan(&K)
-		max_K := 30
-		min_K := 15
-		for j := 0; j < K; j++ {
-			fmt.Scan(&op, &T)
-			if op == ">=" {
-				if T > min_K {
-					min_K = T
+
+	for range N {
+		if _, err := fmt.Scan(&employees); err != nil {
+			fmt.Println("Invalid input K")
+
+			return
+		}
+
+		maxK := 30
+		minK := 15
+
+		for range employees {
+			if _, err := fmt.Scan(&operator, &T); err != nil {
+				fmt.Println("Invalid input")
+
+				return
+			}
+
+			if operator == ">=" {
+				if T > minK {
+					minK = T
 				}
 			}
-			if op == "<=" {
-				if T < max_K {
-					max_K = T
+
+			if operator == "<=" {
+				if T < maxK {
+					maxK = T
 				}
 			}
-			if min_K <= max_K {
-				fmt.Println(min_K)
+
+			if minK <= maxK {
+				fmt.Println(minK)
 			} else {
 				fmt.Println("-1")
 			}
-
 		}
 	}
-
 }
