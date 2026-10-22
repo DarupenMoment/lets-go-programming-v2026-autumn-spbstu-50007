@@ -4,23 +4,23 @@ import "fmt"
 
 func main() {
 	var (
-		departmens, employees, temperature int
-		operator                           string
+		departments, employees, temperature int
+		operator                            string
 	)
 
-	if _, err := fmt.Scan(&departmens); err != nil {
-		fmt.Println("Invalid input departmens")
+	if _, err := fmt.Scan(&departments); err != nil {
+		fmt.Println("Invalid input departments")
 
 		return
 	}
 
-	if !(departmens >= 1 && departmens <= 1000) {
-		fmt.Println("Invalid input departmens")
+	if !(departments >= 1 && departments <= 1000) {
+		fmt.Println("Invalid input departments")
 
 		return
 	}
 
-	for range departmens {
+	for range departments {
 		if _, err := fmt.Scan(&employees); err != nil {
 			fmt.Println("Invalid input K")
 
