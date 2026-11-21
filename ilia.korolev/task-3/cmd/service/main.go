@@ -28,7 +28,6 @@ var (
 	errInvalidConfig      = errors.New("input-file and output-file are required")
 	errUnsupportedCharset = errors.New("unsupported charset")
 	errEmptyValutes       = errors.New("no valutes found in xml")
-	errEmptyCharCode      = errors.New("empty char code in xml")
 )
 
 type Config struct {
@@ -122,10 +121,6 @@ func convertValutes(valutes []Valute) []ResultValute {
 		}
 
 		charCode := strings.TrimSpace(valute.CharCode)
-		if charCode == "" {
-			panic(errEmptyCharCode)
-		}
-
 		valStr := strings.ReplaceAll(strings.TrimSpace(valute.Value), ",", ".")
 
 		valFloat, err := strconv.ParseFloat(valStr, floatBitSize)
