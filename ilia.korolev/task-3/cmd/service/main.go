@@ -25,7 +25,6 @@ const (
 )
 
 var (
-	errEmptyConfigFlag    = errors.New("config flag is required")
 	errInvalidConfig      = errors.New("input-file and output-file are required")
 	errUnsupportedCharset = errors.New("unsupported charset")
 	errEmptyValutes       = errors.New("no valutes found in xml")
@@ -54,11 +53,8 @@ type ResultValute struct {
 	Value    float64 `json:"value"`
 }
 
-func main() {
-	configPath := flag.String("config", "config.yaml", "path to config file")
-	flag.Parse()
-
-	cfgData, err := os.ReadFile(filepath.Clean(*configPath))
+func loadConfig(configPath string) Config {
+	cfgData, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		panic(err)
 	}
@@ -72,23 +68,30 @@ func main() {
 		panic(errInvalidConfig)
 	}
 
-	xmlFile, err := os.Open(filepath.Clean(cfg.InputFile))
+	return cfg
+}
+
+func charsetReader(charset string, input io.Reader) (io.Reader, error) {
+	switch strings.ToLower(strings.TrimSpace(charset)) {
+	case "windows-1251", "cp1251":
+		return transform.NewReader(input, charmap.Windows1251.NewDecoder()), nil
+	default:
+		return nil, fmt.Errorf("%w: %s", errUnsupportedCharset, charset)
+	}
+}
+
+func parseXML(inputPath string) ValCurs {
+	xmlFile, err := os.Open(filepath.Clean(inputPath))
 	if err != nil {
 		panic(err)
 	}
+
 	defer func() {
 		_ = xmlFile.Close()
 	}()
 
 	decoder := xml.NewDecoder(xmlFile)
-	decoder.CharsetReader = func(charset string, input io.Reader) (io.Reader, error) {
-		switch strings.ToLower(strings.TrimSpace(charset)) {
-		case "windows-1251", "cp1251":
-			return transform.NewReader(input, charmap.Windows1251.NewDecoder()), nil
-		default:
-			return nil, fmt.Errorf("%w: %s", errUnsupportedCharset, charset)
-		}
-	}
+	decoder.CharsetReader = charsetReader
 
 	var valCurs ValCurs
 	if err := decoder.Decode(&valCurs); err != nil {
@@ -99,19 +102,32 @@ func main() {
 		panic(errEmptyValutes)
 	}
 
-	results := make([]ResultValute, 0, len(valCurs.Valutes))
-	for _, v := range valCurs.Valutes {
-		numCode, err := strconv.Atoi(strings.TrimSpace(v.NumCode))
-		if err != nil {
-			panic(err)
+	return valCurs
+}
+
+func convertValutes(valutes []Valute) []ResultValute {
+	results := make([]ResultValute, 0, len(valutes))
+
+	for _, valute := range valutes {
+		var numCode int
+
+		rawNumCode := strings.TrimSpace(valute.NumCode)
+		if rawNumCode != "" {
+			parsedNumCode, err := strconv.Atoi(rawNumCode)
+			if err != nil {
+				panic(err)
+			}
+
+			numCode = parsedNumCode
 		}
 
-		charCode := strings.TrimSpace(v.CharCode)
+		charCode := strings.TrimSpace(valute.CharCode)
 		if charCode == "" {
 			panic(errEmptyCharCode)
 		}
 
-		valStr := strings.ReplaceAll(strings.TrimSpace(v.Value), ",", ".")
+		valStr := strings.ReplaceAll(strings.TrimSpace(valute.Value), ",", ".")
+
 		valFloat, err := strconv.ParseFloat(valStr, floatBitSize)
 		if err != nil {
 			panic(err)
@@ -128,7 +144,11 @@ func main() {
 		return results[i].Value > results[j].Value
 	})
 
-	outDir := filepath.Dir(cfg.OutputFile)
+	return results
+}
+
+func saveJSON(outputPath string, results []ResultValute) {
+	outDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(outDir, folderMode); err != nil {
 		panic(err)
 	}
@@ -138,7 +158,17 @@ func main() {
 		panic(err)
 	}
 
-	if err := os.WriteFile(cfg.OutputFile, jsonData, resultMode); err != nil {
+	if err := os.WriteFile(outputPath, jsonData, resultMode); err != nil {
 		panic(err)
 	}
+}
+
+func main() {
+	configPath := flag.String("config", "config.yaml", "path to config file")
+	flag.Parse()
+
+	cfg := loadConfig(*configPath)
+	valCurs := parseXML(cfg.InputFile)
+	results := convertValutes(valCurs.Valutes)
+	saveJSON(cfg.OutputFile, results)
 }
